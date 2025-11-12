@@ -31,18 +31,32 @@ Inspired by **Luke Barousse’s Data Analyst Portfolio Project**, this repositor
 This chart shows how demand for the top 6 skills changes monthly.
 
 ```python
-import matplotlib.pyplot as plt
-import seaborn as sns
+df_da = df[df['job_title_short'] == 'Data Analyst'].copy()
 
-top6 = df[df['job_title_short'] == 'Data Analyst']
-top6 = top6.groupby(['Month', 'job_skills']).size().reset_index(name='count')
-top6 = top6[top6['job_skills'].isin(['sql', 'excel', 'python', 'tableau', 'power bi', 'r'])]
+df_da['job_posted_month_no'] = df_da['job_posted_date'].dt.month
+df_da_explode = df_da.explode('job_skills')
+df_da_pivot = df_da_explode.pivot_table(index='job_posted_month_no', columns='job_skills', aggfunc='size', fill_value=0)
+df_da_pivot.loc['Total'] = df_da_pivot.sum()
+df_da_pivot = df_da_pivot[df_da_pivot.loc['Total'].sort_values(ascending=False).index]
+df_da_pivot = df_da_pivot.drop('Total')
 
-sns.lineplot(data=top6, x='Month', y='count', hue='job_skills', style='job_skills',
-             markers=True, dashes=True)
-plt.title("Top 6 skills for Data Analysts per month")
+df_da_pivot.iloc[:,:6].plot(
+    kind="line",
+    linewidth=4,
+    linestyle='--', # more option
+    colormap='plasma', # more option
+    marker="o", # more option
+    markersize=6,
+    figsize=(10,8)
+
+)
+plt.title('top 6 skills for Data analysts per month')
+plt.ylabel('count')
+plt.xlabel('Month')
 plt.show()
 ```
+![Alt text](Screenshot%20from%202025-11-12%2003-07-06.png)
+
 ## 🏠 2. Job Benefits Distribution
 
 In this section, we explore the **benefits** offered in Data Analyst job postings.  
@@ -55,40 +69,23 @@ These insights help understand how the job market supports **work-life balance**
 ### 📊 Visualization Code
 
 ```python
-import matplotlib.pyplot as plt
+fig, ax = plt.subplots(1, 3)
+dict = {'job_work_from_home':'Work from Home Status', 'job_no_degree_mention': 'No Degree Mention', 'job_health_insurance':'Health Insurance'}
 
-fig, ax = plt.subplots(1, 3, figsize=(15, 4))
+for i, (colum, title) in enumerate(dict.items()):
+    df[colum].value_counts().plot(
+        kind='pie', 
+        startangle=45, 
+        autopct='%1.2f%%', 
+        title=title, 
+        ax=ax[i]
+    )
 
-# Work from Home
-df['job_work_from_home'].value_counts().plot(
-    kind='pie',
-    ax=ax[0],
-    autopct='%1.2f%%',
-    colors=['#1f77b4', '#ff7f0e'],
-    title='Work from Home Status'
-)
-
-# No Degree Mention
-df['job_no_degree_mention'].value_counts().plot(
-    kind='pie',
-    ax=ax[1],
-    autopct='%1.2f%%',
-    colors=['#1f77b4', '#ff7f0e'],
-    title='No Degree Mention'
-)
-
-# Health Insurance
-df['job_health_insurance'].value_counts().plot(
-    kind='pie',
-    ax=ax[2],
-    autopct='%1.2f%%',
-    colors=['#1f77b4', '#ff7f0e'],
-    title='Health Insurance'
-)
-
-plt.tight_layout()
-plt.show()
+fig.tight_layout()
+fig.set_size_inches(15, 8)
 ```
+![Alt text](Screenshot%20from%202025-11-12%2003-07-49.png)
+
 ## 💰 3. Top 10 Highest-Paying and Most In-Demand Skills for Data Analysts
 
 This section compares which **skills bring the highest salaries** and which are **most requested** in job postings.  
@@ -99,35 +96,25 @@ It helps highlight where to focus learning efforts — balancing *demand* and *e
 ### 📊 Visualization Code
 
 ```python
-import matplotlib.pyplot as plt
+fig, ax = plt.subplots(2, 1)
 
-fig, ax = plt.subplots(2, 1, figsize=(8, 6))
-
-# --- Top 10 Highest-Paying Skills ---
-df_salary = (
-    df.groupby('job_skills')['median_salary']
-      .median()
-      .nlargest(10)
-      .sort_values()
-)
-df_salary.plot(kind='barh', ax=ax[0], color='steelblue')
-ax[0].set_title('Top 10 Highest-Pay Skills for Data Analyst')
-ax[0].set_xlabel('Median Salary ($USD)')
-
-# --- Top 10 Most In-Demand Skills ---
-df_demand = (
-    df['job_skills']
-      .value_counts()
-      .nlargest(10)
-      .sort_values()
-)
-df_demand.plot(kind='barh', ax=ax[1], color='cornflowerblue')
-ax[1].set_title('Top 10 Most In-Demand Skills for Data Analyst')
-ax[1].set_xlabel('Number of Job Postings')
-
-plt.tight_layout()
-plt.show()
+df_most_pay.plot(kind='barh',y='median', ax=ax[0], legend=False)
+ax[0].invert_yaxis()
+ax[0].set_title('Top 10 highest pay skills for Data analyst')
+ax[0].set_ylabel("")
+ax[0].set_xlabel("")
+ax[0].xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _:f'${int(x/1000)}K'))
+df_most_skills.plot(kind='barh',y='median', ax=ax[1], legend=False)
+ax[1].invert_yaxis()
+ax[1].set_xlim(ax[0].get_xlim())
+ax[1].set_title('Top 10 Most in demand skills for Data analyst')
+ax[1].set_ylabel("")
+ax[1].set_xlabel("Median Salary ($USD)")
+ax[1].xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _:f'${int(x/1000)}K'))
+fig.tight_layout()
 ```
+![Alt text](/Screenshot%20from%202025-11-12%2003-08-42.png)
+
 ## 🧭 5. Conclusion
 
 This project was an incredible learning experience that combined **data analysis**, **Python programming**, and **data visualization**.
